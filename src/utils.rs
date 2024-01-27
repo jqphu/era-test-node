@@ -230,6 +230,7 @@ pub fn create_debug_output(
             error: None,
             revert_reason: None,
             calls: traces.into_iter().map(Into::into).collect(),
+            events: result.logs.events.clone()
         }),
         ExecutionResult::Revert { output } => Ok(DebugCall {
             gas_used: result.statistics.gas_used.into(),
@@ -243,6 +244,7 @@ pub fn create_debug_output(
             error: None,
             revert_reason: Some(output.to_string()),
             calls: traces.into_iter().map(Into::into).collect(),
+            events: result.logs.events.clone()
         }),
         ExecutionResult::Halt { reason } => Err(Web3Error::SubmitTransactionError(
             reason.to_string(),
