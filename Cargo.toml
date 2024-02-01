@@ -11,14 +11,14 @@ categories = ["cryptography"]
 publish = false # We don't want to publish our binaries.
 
 [dependencies]
-zksync_basic_types = { git = "https://github.com/matter-labs/zksync-era.git", rev = "d27455c" }
-zksync_core = { git = "https://github.com/matter-labs/zksync-era.git", rev = "d27455c" }
-multivm = { git = "https://github.com/matter-labs/zksync-era.git", rev = "d27455c" }
-zksync_contracts = { git = "https://github.com/matter-labs/zksync-era.git", rev = "d27455c" }
-zksync_types = { git = "https://github.com/matter-labs/zksync-era.git", rev = "d27455c" }
-zksync_utils = { git = "https://github.com/matter-labs/zksync-era.git", rev = "d27455c" }
-zksync_state = { git = "https://github.com/matter-labs/zksync-era.git", rev = "d27455c" }
-zksync_web3_decl = { git = "https://github.com/matter-labs/zksync-era.git", rev = "d27455c" }
+zksync_basic_types = { git = "https://github.com/jqphu/zksync-era.git", rev = "d27455c" }
+zksync_core = { git = "https://github.com/jqphu/zksync-era.git", rev = "d27455c" }
+multivm = { git = "https://github.com/jqphu/zksync-era.git", rev = "d27455c" }
+zksync_contracts = { git = "https://github.com/jqphu/zksync-era.git", rev = "d27455c" }
+zksync_types = { git = "https://github.com/jqphu/zksync-era.git", rev = "d27455c" }
+zksync_utils = { git = "https://github.com/jqphu/zksync-era.git", rev = "d27455c" }
+zksync_state = { git = "https://github.com/jqphu/zksync-era.git", rev = "d27455c" }
+zksync_web3_decl = { git = "https://github.com/jqphu/zksync-era.git", rev = "d27455c" }
 sha3 = "0.10.6"
 
 
