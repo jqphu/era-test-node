@@ -11,14 +11,14 @@ categories = ["cryptography"]
 publish = false # We don't want to publish our binaries.
 
 [dependencies]
-zksync_basic_types = { git = "https://github.com/matter-labs/zksync-era.git", rev = "d1e47744c773fa38aa22aaaa3dbb9dbffe7e9854" }
-zksync_core = { git = "https://github.com/matter-labs/zksync-era.git", rev = "d1e47744c773fa38aa22aaaa3dbb9dbffe7e9854" }
-multivm = { git = "https://github.com/matter-labs/zksync-era.git", rev = "d1e47744c773fa38aa22aaaa3dbb9dbffe7e9854" }
-zksync_contracts = { git = "https://github.com/matter-labs/zksync-era.git", rev = "d1e47744c773fa38aa22aaaa3dbb9dbffe7e9854" }
-zksync_types = { git = "https://github.com/matter-labs/zksync-era.git", rev = "d1e47744c773fa38aa22aaaa3dbb9dbffe7e9854" }
-zksync_utils = { git = "https://github.com/matter-labs/zksync-era.git", rev = "d1e47744c773fa38aa22aaaa3dbb9dbffe7e9854" }
-zksync_state = { git = "https://github.com/matter-labs/zksync-era.git", rev = "d1e47744c773fa38aa22aaaa3dbb9dbffe7e9854" }
-zksync_web3_decl = { git = "https://github.com/matter-labs/zksync-era.git", rev = "d1e47744c773fa38aa22aaaa3dbb9dbffe7e9854" }
+zksync_basic_types = { git = "https://github.com/jqphu/zksync-era.git", rev = "d34fc1037d746d1f71a3ed3a8a8cab2a90155645" }
+zksync_core = { git = "https://github.com/jqphu/zksync-era.git", rev = "d34fc1037d746d1f71a3ed3a8a8cab2a90155645" }
+multivm = { git = "https://github.com/jqphu/zksync-era.git", rev = "d34fc1037d746d1f71a3ed3a8a8cab2a90155645" }
+zksync_contracts = { git = "https://github.com/jqphu/zksync-era.git", rev = "d34fc1037d746d1f71a3ed3a8a8cab2a90155645" }
+zksync_types = { git = "https://github.com/jqphu/zksync-era.git", rev = "d34fc1037d746d1f71a3ed3a8a8cab2a90155645" }
+zksync_utils = { git = "https://github.com/jqphu/zksync-era.git", rev = "d34fc1037d746d1f71a3ed3a8a8cab2a90155645" }
+zksync_state = { git = "https://github.com/jqphu/zksync-era.git", rev = "d34fc1037d746d1f71a3ed3a8a8cab2a90155645" }
+zksync_web3_decl = { git = "https://github.com/jqphu/zksync-era.git", rev = "d34fc1037d746d1f71a3ed3a8a8cab2a90155645" }
 sha3 = "0.10.6"
 
 

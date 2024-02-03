@@ -9,7 +9,7 @@ use zksync_basic_types::{H256, U256};
 use zksync_types::api::{BridgeAddresses, Transaction};
 use zksync_web3_decl::types::Token;
 use zksync_web3_decl::{
-    jsonrpsee::http_client::{HttpClient, HttpClientBuilder},
+    jsonrpsee::ws_client::{WsClient, WsClientBuilder},
     namespaces::{EthNamespaceClient, ZksNamespaceClient},
     types::Index,
 };
@@ -17,6 +17,8 @@ use zksync_web3_decl::{
 #[derive(Debug, Clone)]
 /// Fork source that gets the data via HTTP requests.
 pub struct HttpForkSource {
+    /// Client to be used.
+    pub client: Arc<WsClient>,
     /// URL for the network to fork.
     pub fork_url: String,
     /// Cache for network data.
@@ -24,17 +26,19 @@ pub struct HttpForkSource {
 }
 
 impl HttpForkSource {
-    pub fn new(fork_url: String, cache_config: CacheConfig) -> Self {
+    pub async fn new(fork_url: String, cache_config: CacheConfig) -> Self {
         Self {
+            client: Arc::new(
+                WsClientBuilder::default()
+                    .build(&fork_url)
+                    .await
+                    .unwrap_or_else(|e| {
+                        panic!("Unable to create a client for fork: {}, {:?}", fork_url, e)
+                    }),
+            ),
             fork_url,
             cache: Arc::new(RwLock::new(Cache::new(cache_config))),
         }
-    }
-
-    pub fn create_client(&self) -> HttpClient {
-        HttpClientBuilder::default()
-            .build(self.fork_url.clone())
-            .unwrap_or_else(|_| panic!("Unable to create a client for fork: {}", self.fork_url))
     }
 }
 
@@ -45,7 +49,7 @@ impl ForkSource for HttpForkSource {
         idx: zksync_basic_types::U256,
         block: Option<zksync_types::api::BlockIdVariant>,
     ) -> eyre::Result<zksync_basic_types::H256> {
-        let client = self.create_client();
+        let client = self.client.clone();
         block_on(async move { client.get_storage_at(address, idx, block).await })
             .wrap_err("fork http client failed")
     }
@@ -54,7 +58,7 @@ impl ForkSource for HttpForkSource {
         &self,
         hash: zksync_basic_types::H256,
     ) -> eyre::Result<Option<Vec<u8>>> {
-        let client = self.create_client();
+        let client = self.client.clone();
         block_on(async move { client.get_bytecode_by_hash(hash).await })
             .wrap_err("fork http client failed")
     }
@@ -72,7 +76,7 @@ impl ForkSource for HttpForkSource {
             return Ok(Some(transaction));
         }
 
-        let client = self.create_client();
+        let client = self.client.clone();
         block_on(async move { client.get_transaction_by_hash(hash).await })
             .map(|maybe_transaction| {
                 if let Some(transaction) = &maybe_transaction {
@@ -95,7 +99,7 @@ impl ForkSource for HttpForkSource {
         &self,
         hash: H256,
     ) -> eyre::Result<Option<zksync_types::api::TransactionDetails>> {
-        let client = self.create_client();
+        let client = self.client.clone();
         // n.b- We don't cache these responses as they will change through the lifecycle of the transaction
         // and caching could be error-prone. in theory we could cache responses once the txn status
         // is `final` or `failed` but currently this does not warrant the additional complexity.
@@ -117,7 +121,7 @@ impl ForkSource for HttpForkSource {
             return Ok(transaction);
         }
 
-        let client = self.create_client();
+        let client = self.client.clone();
         block_on(async move { client.get_raw_block_transactions(block_number).await })
             .wrap_err("fork http client failed")
             .map(|transactions| {
@@ -152,7 +156,7 @@ impl ForkSource for HttpForkSource {
             return Ok(Some(block));
         }
 
-        let client = self.create_client();
+        let client = self.client.clone();
         block_on(async move { client.get_block_by_hash(hash, full_transactions).await })
             .map(|block| {
                 if let Some(block) = &block {
@@ -192,7 +196,7 @@ impl ForkSource for HttpForkSource {
             return Ok(Some(block));
         }
 
-        let client = self.create_client();
+        let client = self.client.clone();
         block_on(async move {
             client
                 .get_block_by_number(block_number, full_transactions)
@@ -219,7 +223,7 @@ impl ForkSource for HttpForkSource {
 
     /// Returns the  transaction count for a given block hash.
     fn get_block_transaction_count_by_hash(&self, block_hash: H256) -> eyre::Result<Option<U256>> {
-        let client = self.create_client();
+        let client = self.client.clone();
         block_on(async move { client.get_block_transaction_count_by_hash(block_hash).await })
             .wrap_err("fork http client failed")
     }
@@ -229,7 +233,7 @@ impl ForkSource for HttpForkSource {
         &self,
         block_number: zksync_types::api::BlockNumber,
     ) -> eyre::Result<Option<U256>> {
-        let client = self.create_client();
+        let client = self.client.clone();
         block_on(async move {
             client
                 .get_block_transaction_count_by_number(block_number)
@@ -244,7 +248,7 @@ impl ForkSource for HttpForkSource {
         block_hash: H256,
         index: Index,
     ) -> eyre::Result<Option<Transaction>> {
-        let client = self.create_client();
+        let client = self.client.clone();
         block_on(async move {
             client
                 .get_transaction_by_block_hash_and_index(block_hash, index)
@@ -259,7 +263,7 @@ impl ForkSource for HttpForkSource {
         block_number: zksync_types::api::BlockNumber,
         index: Index,
     ) -> eyre::Result<Option<Transaction>> {
-        let client = self.create_client();
+        let client = self.client.clone();
         block_on(async move {
             client
                 .get_transaction_by_block_number_and_index(block_number, index)
@@ -273,7 +277,7 @@ impl ForkSource for HttpForkSource {
         &self,
         miniblock: zksync_basic_types::MiniblockNumber,
     ) -> eyre::Result<Option<zksync_types::api::BlockDetails>> {
-        let client = self.create_client();
+        let client = self.client.clone();
         block_on(async move { client.get_block_details(miniblock).await })
             .wrap_err("fork http client failed")
     }
@@ -290,7 +294,7 @@ impl ForkSource for HttpForkSource {
             return Ok(bridge_addresses);
         };
 
-        let client = self.create_client();
+        let client = self.client.clone();
         block_on(async move { client.get_bridge_contracts().await })
             .map(|bridge_addresses| {
                 self.cache
@@ -319,7 +323,7 @@ impl ForkSource for HttpForkSource {
             return Ok(confirmed_tokens);
         };
 
-        let client = self.create_client();
+        let client = self.client.clone();
         block_on(async move { client.get_confirmed_tokens(from, limit).await })
             .map(|confirmed_tokens| {
                 self.cache
@@ -350,8 +354,8 @@ mod tests {
 
     use super::*;
 
-    #[test]
-    fn test_get_block_by_hash_full_is_cached() {
+    #[tokio::test]
+    async fn test_get_block_by_hash_full_is_cached() {
         let input_block_hash = H256::repeat_byte(0x01);
         let input_block_number = 8;
 
@@ -372,7 +376,7 @@ mod tests {
                 .build(),
         );
 
-        let fork_source = HttpForkSource::new(mock_server.url(), CacheConfig::Memory);
+        let fork_source = HttpForkSource::new(mock_server.url(), CacheConfig::Memory).await;
 
         let actual_block = fork_source
             .get_block_by_hash(input_block_hash, true)
@@ -391,8 +395,8 @@ mod tests {
         assert_eq!(U64::from(input_block_number), actual_block.number);
     }
 
-    #[test]
-    fn test_get_block_by_hash_minimal_is_cached() {
+    #[tokio::test]
+    async fn test_get_block_by_hash_minimal_is_cached() {
         let input_block_hash = H256::repeat_byte(0x01);
         let input_block_number = 8;
 
@@ -413,7 +417,7 @@ mod tests {
                 .build(),
         );
 
-        let fork_source = HttpForkSource::new(mock_server.url(), CacheConfig::Memory);
+        let fork_source = HttpForkSource::new(mock_server.url(), CacheConfig::Memory).await;
 
         let actual_block = fork_source
             .get_block_by_hash(input_block_hash, false)
@@ -432,8 +436,8 @@ mod tests {
         assert_eq!(U64::from(input_block_number), actual_block.number);
     }
 
-    #[test]
-    fn test_get_block_by_number_full_is_cached() {
+    #[tokio::test]
+    async fn test_get_block_by_number_full_is_cached() {
         let input_block_hash = H256::repeat_byte(0x01);
         let input_block_number = 8;
 
@@ -454,7 +458,7 @@ mod tests {
                 .build(),
         );
 
-        let fork_source = HttpForkSource::new(mock_server.url(), CacheConfig::Memory);
+        let fork_source = HttpForkSource::new(mock_server.url(), CacheConfig::Memory).await;
 
         let actual_block = fork_source
             .get_block_by_number(
@@ -479,8 +483,8 @@ mod tests {
         assert_eq!(U64::from(input_block_number), actual_block.number);
     }
 
-    #[test]
-    fn test_get_block_by_number_minimal_is_cached() {
+    #[tokio::test]
+    async fn test_get_block_by_number_minimal_is_cached() {
         let input_block_hash = H256::repeat_byte(0x01);
         let input_block_number = 8;
 
@@ -501,7 +505,7 @@ mod tests {
                 .build(),
         );
 
-        let fork_source = HttpForkSource::new(mock_server.url(), CacheConfig::Memory);
+        let fork_source = HttpForkSource::new(mock_server.url(), CacheConfig::Memory).await;
 
         let actual_block = fork_source
             .get_block_by_number(BlockNumber::Number(U64::from(input_block_number)), false)
@@ -520,8 +524,8 @@ mod tests {
         assert_eq!(U64::from(input_block_number), actual_block.number);
     }
 
-    #[test]
-    fn test_get_raw_block_transactions_is_cached() {
+    #[tokio::test]
+    async fn test_get_raw_block_transactions_is_cached() {
         let input_block_number = 8u32;
 
         let mock_server = testing::MockServer::run();
@@ -539,7 +543,7 @@ mod tests {
                 .build(),
         );
 
-        let fork_source = HttpForkSource::new(mock_server.url(), CacheConfig::Memory);
+        let fork_source = HttpForkSource::new(mock_server.url(), CacheConfig::Memory).await;
 
         let actual_raw_transactions = fork_source
             .get_raw_block_transactions(MiniblockNumber(input_block_number))
@@ -552,8 +556,8 @@ mod tests {
         assert_eq!(1, actual_raw_transactions.len());
     }
 
-    #[test]
-    fn test_get_transactions_is_cached() {
+    #[tokio::test]
+    async fn test_get_transactions_is_cached() {
         let input_tx_hash = H256::repeat_byte(0x01);
 
         let mock_server = testing::MockServer::run();
@@ -571,7 +575,7 @@ mod tests {
                 .build(),
         );
 
-        let fork_source = HttpForkSource::new(mock_server.url(), CacheConfig::Memory);
+        let fork_source = HttpForkSource::new(mock_server.url(), CacheConfig::Memory).await;
 
         let actual_transaction = fork_source
             .get_transaction_by_hash(input_tx_hash)
@@ -586,8 +590,8 @@ mod tests {
         assert_eq!(input_tx_hash, actual_transaction.hash);
     }
 
-    #[test]
-    fn test_get_transaction_details() {
+    #[tokio::test]
+    async fn test_get_transaction_details() {
         let input_tx_hash = H256::repeat_byte(0x01);
         let mock_server = testing::MockServer::run();
         mock_server.expect(
@@ -616,7 +620,7 @@ mod tests {
             }),
         );
 
-        let fork_source = HttpForkSource::new(mock_server.url(), CacheConfig::Memory);
+        let fork_source = HttpForkSource::new(mock_server.url(), CacheConfig::Memory).await;
         let transaction_details = fork_source
             .get_transaction_details(input_tx_hash)
             .expect("failed fetching transaction")
@@ -627,8 +631,8 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_get_block_details() {
+    #[tokio::test]
+    async fn test_get_block_details() {
         let miniblock = MiniblockNumber::from(16474138);
         let mock_server = testing::MockServer::run();
         mock_server.expect(
@@ -669,7 +673,7 @@ mod tests {
               }),
         );
 
-        let fork_source = HttpForkSource::new(mock_server.url(), CacheConfig::Memory);
+        let fork_source = HttpForkSource::new(mock_server.url(), CacheConfig::Memory).await;
         let block_details = fork_source
             .get_block_details(miniblock)
             .expect("failed fetching transaction")
@@ -680,8 +684,8 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_get_bridge_contracts_is_cached() {
+    #[tokio::test]
+    async fn test_get_bridge_contracts_is_cached() {
         let input_bridge_addresses = BridgeAddresses {
             l1_erc20_default_bridge: H160::repeat_byte(0x1),
             l2_erc20_default_bridge: H160::repeat_byte(0x2),
@@ -707,7 +711,7 @@ mod tests {
             }),
         );
 
-        let fork_source = HttpForkSource::new(mock_server.url(), CacheConfig::Memory);
+        let fork_source = HttpForkSource::new(mock_server.url(), CacheConfig::Memory).await;
 
         let actual_bridge_addresses = fork_source
             .get_bridge_contracts()
@@ -720,8 +724,8 @@ mod tests {
         testing::assert_bridge_addresses_eq(&input_bridge_addresses, &actual_bridge_addresses);
     }
 
-    #[test]
-    fn test_get_confirmed_tokens_is_cached() {
+    #[tokio::test]
+    async fn test_get_confirmed_tokens_is_cached() {
         let mock_server = testing::MockServer::run();
         mock_server.expect(
             serde_json::json!({
@@ -745,7 +749,7 @@ mod tests {
             }),
         );
 
-        let fork_source = HttpForkSource::new(mock_server.url(), CacheConfig::Memory);
+        let fork_source = HttpForkSource::new(mock_server.url(), CacheConfig::Memory).await;
 
         let tokens = fork_source
             .get_confirmed_tokens(0, 100)

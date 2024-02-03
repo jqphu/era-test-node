@@ -638,6 +638,7 @@ pub fn default_tx_debug_info() -> DebugCall {
         input: Default::default(),
         error: None,
         revert_reason: None,
+        events: vec![],
         calls: vec![DebugCall {
             r#type: DebugCallType::Call,
             from: Address::zero(),
@@ -650,6 +651,7 @@ pub fn default_tx_debug_info() -> DebugCall {
             error: None,
             revert_reason: None,
             calls: vec![],
+            events: vec![],
         }],
     }
 }
