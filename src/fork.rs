@@ -393,7 +393,7 @@ impl ForkDetails<HttpForkSource> {
         }
 
         ForkDetails {
-            fork_source: HttpForkSource::new(url.to_owned(), cache_config),
+            fork_source: HttpForkSource::new(format!("wss://{}", url), cache_config).await,
             l1_block: l1_batch_number,
             l2_block: block,
             block_timestamp: block_details.base.timestamp,
@@ -405,13 +405,14 @@ impl ForkDetails<HttpForkSource> {
     }
     /// Create a fork from a given network at a given height.
     pub async fn from_network(fork: &str, fork_at: Option<u64>, cache_config: CacheConfig) -> Self {
-        let (url, client) = Self::fork_to_url_and_client(fork);
+        let fork_http = format!("https://{fork}");
+        let (_, client) = Self::fork_to_url_and_client(&fork_http);
         let l2_miniblock = if let Some(fork_at) = fork_at {
             fork_at
         } else {
             client.get_block_number().await.unwrap().as_u64()
         };
-        Self::from_url_and_miniblock_and_chain(url, client, l2_miniblock, None, cache_config).await
+        Self::from_url_and_miniblock_and_chain(fork, client, l2_miniblock, None, cache_config).await
     }
 
     /// Create a fork from a given network, at a height BEFORE a transaction.
